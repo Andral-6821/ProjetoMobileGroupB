@@ -1,4 +1,6 @@
+
 package stocksDetailedFragment
+
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
@@ -6,6 +8,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.core.view.isGone
@@ -24,6 +27,7 @@ import retrofit.retrofitInterface
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+import kotlin.math.E
 
 class StocksDetailedFragment(stockssummary:SymbolSummary):Fragment() {
     private val summary = stockssummary
@@ -34,18 +38,104 @@ class StocksDetailedFragment(stockssummary:SymbolSummary):Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        return inflater.inflate(R.layout.fragment_stock_details, container, false)
+        return inflater.inflate(R.layout.summary_details_layout, container, false)
 
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val viewModel = StocksDetailedViewModel()
-        viewModel
+
+        //Lê a funcionalidade que foi clicada para ver os detalhes
+        val clickedSummary= arguments?.getString("symbol")?:null
+
+        //Selecionar o container
+        val stockcontainer=view.findViewById<LinearLayout>(R.id.detailsContainer)
+
+        if(stockcontainer!=null){
+            //Selecionar a view dos detalhes
+            val stockDetailView= layoutInflater.inflate(R.layout.fragment_stock_details,null)
+
+            //TextViews para cada um dos atributos de cada stock
+            val stockTitle = stockDetailView.findViewById<TextView>(R.id.titleSymbol)
+            val stockSector = stockDetailView.findViewById<TextView>(R.id.sector)
+            val stockCeo = stockDetailView.findViewById<TextView>(R.id.ceo)
+            val stockDescription = stockDetailView.findViewById<TextView>(R.id.description)
+            val stockLogo = stockDetailView.findViewById<ImageView>(R.id.logoImageView)
+
+            //selecionar um valor padrão
+            stockTitle.text=clickedSummary
+            stockSector.text = "Loading..."
+            stockCeo.text = "Loading..."
+            stockDescription.text = "Loading..."
+
+            //adicionar uma view aos containers
+            stockcontainer.addView(stockDetailView)
+
+            //carregar os detalhes
+            loadDetails(clickedSummary,stockSector,stockCeo,stockDescription)
+            loadLogo(clickedSummary,stockLogo)
+            val stockChart=view?.findViewById(R.id.lineChart)?:throw IllegalStateException("GraphView not found")
+            loadChartData(clickedSummary,stockChart)
+        }else{
+            // Handle the case where assetContainer is null
+            // Log an error, show a message, or take appropriate action
+        }
     }
 
-    override fun onResume() {
-        super.onResume()
+    private fun loadDetails(
+        clickedSummary: String?,
+        stockSector: TextView,
+        stockCeo: TextView,
+        stockDescription: TextView
+    ) {
+        val jsonApi = RetrofitConfig.retrofit.create(retrofitInterface::class.java)
+
+
+        if (clickedSummary != null) {
+            jsonApi.getSymbolDetails(clickedSummary).enqueue(object : Callback<SymbolDetails>) {
+                override fun onResponse(call: Call<SymbolDetails>, response: Response<SymbolDetails>) {
+                    if (response.isSuccessful) {
+                        stockSector.text = "Sector: " + response.body()?.sector ?: "N/A"
+                        stockCeo.text = "CEO: " + response.body()?.CEO ?: "N/A"
+                        stockDescription.text =
+                            "Description: " + response.body()?.description ?: "N/A"
+                    } else {
+                        stockSector.text = "Error: ${response.code()}"
+                        stockCeo.text = "Error"
+                        stockDescription.text = "Error"
+                    }
+                }
+
+                override fun onFailure(call: Call<SymbolDetails>, t: Throwable) {
+                    stockSector.text = "Fail: ${t.message}"
+                    stockCeo.text = "Fail"
+                    stockDescription.text = "Fail"
+                }
+            })
+        }
+    } }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    private fun LoadSummary(view:View) {
+
 
         val savedStocks = SharedPreferencesHelper.loadSymbols(requireContext())
 

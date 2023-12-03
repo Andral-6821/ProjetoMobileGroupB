@@ -18,6 +18,12 @@ object SharedPreferencesHelper {
         Log.d("SharedPreferencesHelper", "Added symbol: $symbol")
     }
 
+    fun removeSymbol(symbol: SymbolSummary, context: Context) {
+        symbols.remove(symbol)
+        saveSymbols(context)
+        Log.d("SharedPreferencesHelper", "Removed symbol: $symbol")
+    }
+
     private fun saveSymbols(context: Context) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val editor = prefs.edit()

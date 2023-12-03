@@ -1,18 +1,22 @@
 package stockListFragment
 
 import android.view.LayoutInflater
+import android.os.Handler
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import android.widget.Switch
 import androidx.appcompat.widget.AppCompatImageView
 import androidx.recyclerview.widget.RecyclerView
 import com.example.projetomobiledef.R
 import com.example.projetomobiledef.retrofit.SymbolSummary
+import com.example.projetomobiledef.SharedPreferencesHelper
 import com.squareup.picasso.Picasso
 
 class EditStockListRecyclerAdapter(private val dataList: MutableList<SymbolSummary>) : RecyclerView.Adapter<EditStockListRecyclerAdapter.ItemViewHolder>() {
     // ViewHolder class to hold the views
     class ItemViewHolder(itemView: View,  ) : RecyclerView.ViewHolder(itemView) {
+        val nameTextView: Switch = itemView.findViewById(R.id.button)
 
         val logoImageView:AppCompatImageView=itemView.findViewById(R.id.ivStocksList_logo)
         val stockName:TextView=itemView.findViewById(R.id.tvSymbol_List)
@@ -21,8 +25,8 @@ class EditStockListRecyclerAdapter(private val dataList: MutableList<SymbolSumma
 
         init{
             itemView.setOnClickListener{
-
             }
+
         }
     }
 
@@ -45,6 +49,27 @@ class EditStockListRecyclerAdapter(private val dataList: MutableList<SymbolSumma
         holder.stockName.text = dataList[position].symbol
         holder.stockPrice.text = dataList[position].current_price.toString()
         holder.stockPercent.text = dataList[position].change_percent.toString()
+
+        val isSymbolSaved = SharedPreferencesHelper.loadSymbols(holder.itemView.context).contains(dataList[position])
+
+        holder.nameTextView.setOnCheckedChangeListener(null) // Remova temporariamente o listener para evitar chamadas recursivas
+
+        holder.nameTextView.isChecked = isSymbolSaved
+
+        // Adicione um Handler para postar a notificação fora do ciclo de vida do RecyclerView
+        Handler().post {
+            holder.nameTextView.setOnCheckedChangeListener { _, isChecked ->
+                if (isChecked) {
+                    // adicionar o símbolo às preferências compartilhadas enquanto o switch está ativado
+                    SharedPreferencesHelper.addSymbol(dataList[position], holder.itemView.context)
+                } else {
+                    // remover o símbolo das preferências compartilhadas enquanto o switch está desativado
+                    SharedPreferencesHelper.removeSymbol(dataList[position], holder.itemView.context)
+                }
+                notifyItemChanged(position)
+            }
+        }
+
     }
 
     // Return the size of your dataset
