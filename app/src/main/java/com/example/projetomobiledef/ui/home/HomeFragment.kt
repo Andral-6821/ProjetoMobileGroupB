@@ -20,15 +20,16 @@ import retrofit2.Callback
 
 import retrofit2.Response
 
-class HomeFragment : Fragment() {
+class HomeFragment : Fragment(),HomeRecyclerAdapter.SymbolCLicked {
     val homeRecyclerAdapter = HomeRecyclerAdapter(mutableListOf())
+    private val  savedStocksSummaryList = mutableListOf<SymbolSummary>()
     override fun onResume() {
         super.onResume()
 
         val savedStocks = SharedPreferencesHelper.loadSymbols(requireContext())
 
         val jsonNewsApi = RetrofitConfig.retrofit.create(retrofitInterface::class.java)
-        val savedStocksSummaryList = mutableListOf<SymbolSummary>()
+
 
         savedStocks.forEach {
             val call = jsonNewsApi.getSummary(it.symbol)
@@ -65,10 +66,12 @@ class HomeFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View {
         val view = inflater.inflate(R.layout.fragment_home, container, false)
-
+        val adapter= HomeRecyclerAdapter(savedStocksSummaryList)
         val recyclerView: RecyclerView = view.findViewById(R.id.rvSavedStocks)
+        adapter.setDetailsClickListener(this)
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
-        recyclerView.adapter = homeRecyclerAdapter
+        recyclerView.adapter = adapter
+
         return view
     }
 
@@ -78,6 +81,24 @@ class HomeFragment : Fragment() {
         button.setOnClickListener {
             findNavController().navigate(R.id.navigation_stocklist)
         }
+    }
+
+
+
+
+
+    override fun onSymbolCLicked(symbol: SymbolSummary) {
+
+        val switchFrag= stocksDetailedFragment.StocksDetailedFragment()
+        val bundle= Bundle()
+        bundle.putString("symbol", symbol.toString())
+        switchFrag.arguments=bundle
+
+
+        val transaction = requireActivity().supportFragmentManager.beginTransaction()
+        transaction.replace(R.id.displayHome_fragment, switchFrag)
+        transaction.addToBackStack(null)
+        transaction.commit()
     }
 }
 
