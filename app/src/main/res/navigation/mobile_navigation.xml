@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/mobile_navigation"
+    app:startDestination="@+id/navigation_home">
+
+    <fragment
+        android:id="@+id/navigation_home"
+        android:name="com.example.projetomobiledef.ui.home.HomeFragment"
+        android:label="@string/title_home"
+        tools:layout="@layout/fragment_home" >
+        <action
+            android:id="@+id/action_navigation_home_to_navigation_notifications"
+            app:destination="@id/navigation_notifications"
+            app:enterAnim="@android:anim/fade_in"
+            app:exitAnim="@android:anim/fade_out" />
+        <action
+            android:id="@+id/action_navigation_home_to_navigation_stocklist"
+            app:destination="@id/navigation_stocklist"
+            app:enterAnim="@android:anim/fade_in"
+            app:exitAnim="@android:anim/fade_out" />
+    </fragment>
+
+
+    <fragment
+        android:id="@+id/navigation_notifications"
+        android:name="com.example.projetomobiledef.ui.news.NewsFragment"
+        android:label="@string/title_notifications"
+        tools:layout="@layout/fragment_news" >
+        <action
+            android:id="@+id/action_navigation_notifications_to_navigation_home"
+            app:destination="@id/navigation_home"
+            app:enterAnim="@android:anim/fade_in"
+            app:exitAnim="@android:anim/fade_out" />
+        <action
+            android:id="@+id/action_navigation_notifications_to_navigation_stocklist"
+            app:destination="@id/navigation_stocklist"
+            app:enterAnim="@android:anim/fade_in"
+            app:exitAnim="@android:anim/fade_out" />
+
+    </fragment>
+
+
+
+    <fragment
+        android:id="@+id/navigation_stocklist"
+        android:name="stockListFragment.EditStockListFragment"
+        android:label="@string/title_notifications"
+        tools:layout="@layout/fragment_edit_stock_list" >
+        <action
+            android:id="@+id/action_navigation_stocklist_to_navigation_home"
+            app:destination="@id/navigation_home"
+            app:enterAnim="@android:anim/fade_in"
+            app:exitAnim="@android:anim/fade_out" />
+        <action
+            android:id="@+id/action_navigation_stocklist_to_navigation_notifications"
+            app:destination="@id/navigation_notifications" />
+
+    </fragment>
+
+
+
+
+</navigation>
