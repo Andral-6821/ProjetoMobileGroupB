@@ -5,8 +5,9 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
-import android.widget.TextView
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.Observer
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -21,15 +22,16 @@ import retrofit2.Callback
 import retrofit2.Response
 
 class HomeFragment : Fragment(),HomeRecyclerAdapter.SymbolCLicked {
+    val savedStocksSummaryList = MutableLiveData<MutableList<SymbolSummary>>()
     val homeRecyclerAdapter = HomeRecyclerAdapter(mutableListOf())
-    private val  savedStocksSummaryList = mutableListOf<SymbolSummary>()
+
+
+
     override fun onResume() {
         super.onResume()
 
         val savedStocks = SharedPreferencesHelper.loadSymbols(requireContext())
-
-        val jsonNewsApi = RetrofitConfig.retrofit.create(retrofitInterface::class.java)
-
+        val jsonNewsApi = RetrofitConfig.getInstance().create(retrofitInterface::class.java)
 
         savedStocks.forEach {
             val call = jsonNewsApi.getSummary(it.symbol)
@@ -39,25 +41,29 @@ class HomeFragment : Fragment(),HomeRecyclerAdapter.SymbolCLicked {
                     call: Call<SymbolSummary>,
                     response: Response<SymbolSummary>
                 ) {
-
                     if (response.isSuccessful) {
                         response.body()?.let { symbolSummary ->
-                            savedStocksSummaryList.add(symbolSummary)
-                        }
-
-                        if (savedStocksSummaryList.size == savedStocks.size) {
-                            homeRecyclerAdapter.updateData(savedStocksSummaryList)
+                            val currentList = savedStocksSummaryList.value ?: mutableListOf()
+                            if (!currentList.contains(symbolSummary)) {
+                                currentList.add(symbolSummary)
+                                savedStocksSummaryList.postValue(currentList)
+                            }
                         }
                     } else {
-                        //TRatar erros na resposta
+                        // Handle errors in response
                     }
                 }
 
                 override fun onFailure(call: Call<SymbolSummary>, t: Throwable) {
-                    //tratar falhas
+                    // Handle failures
                 }
             })
         }
+
+        // Observe the changes in your list and update the adapter
+        savedStocksSummaryList.observe(viewLifecycleOwner, Observer { list ->
+            homeRecyclerAdapter.updateData(list)
+        })
     }
 
     override fun onCreateView(
@@ -66,14 +72,14 @@ class HomeFragment : Fragment(),HomeRecyclerAdapter.SymbolCLicked {
         savedInstanceState: Bundle?
     ): View {
         val view = inflater.inflate(R.layout.fragment_home, container, false)
-        val adapter= HomeRecyclerAdapter(savedStocksSummaryList)
         val recyclerView: RecyclerView = view.findViewById(R.id.rvSavedStocks)
-        adapter.setDetailsClickListener(this)
+        homeRecyclerAdapter.setDetailsClickListener(this)
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
-        recyclerView.adapter = adapter
+        recyclerView.adapter = homeRecyclerAdapter
 
         return view
     }
+
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -89,16 +95,20 @@ class HomeFragment : Fragment(),HomeRecyclerAdapter.SymbolCLicked {
 
     override fun onSymbolCLicked(symbol: SymbolSummary) {
 
-        val switchFrag= stocksDetailedFragment.StocksDetailedFragment()
-        val bundle= Bundle()
-        bundle.putString("symbol", symbol.toString())
-        switchFrag.arguments=bundle
-
+        val switchFrag= stocksDetailedFragment.StocksDetailedFragment(symbol)
 
         val transaction = requireActivity().supportFragmentManager.beginTransaction()
         transaction.replace(R.id.displayHome_fragment, switchFrag)
         transaction.addToBackStack(null)
         transaction.commit()
+    }
+
+    fun removeSymbolFromHome(symbol: SymbolSummary) {
+        // Remove the symbol from the list and update the adapter
+        val currentList = savedStocksSummaryList.value?.toMutableList() ?: mutableListOf()
+        currentList.remove(symbol)
+        savedStocksSummaryList.postValue(currentList)
+        homeRecyclerAdapter.updateData(currentList)
     }
 }
 

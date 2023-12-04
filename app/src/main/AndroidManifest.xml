@@ -28,7 +28,7 @@
         <activity
             android:name="stockListFragment.EditStockListFragment"
             android:label="Stock List Fragment"
-            tools:ignore="Instantiatable">>
+            tools:ignore="Instantiatable">
         </activity>
 
        </application>

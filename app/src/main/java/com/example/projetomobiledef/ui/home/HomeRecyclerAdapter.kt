@@ -6,22 +6,20 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.appcompat.widget.AppCompatImageView
+import androidx.lifecycle.MutableLiveData
 import com.example.projetomobiledef.R
 import com.example.projetomobiledef.retrofit.SymbolSummary
 import com.squareup.picasso.Picasso
 
-class HomeRecyclerAdapter(private val items:MutableList<SymbolSummary>):RecyclerView.Adapter<HomeRecyclerAdapter.ItemViewHolder> (){
+class HomeRecyclerAdapter(private val items: MutableList<SymbolSummary>):RecyclerView.Adapter<HomeRecyclerAdapter.ItemViewHolder>(){
 
     private var clickListener: SymbolCLicked?=null
+
     class ItemViewHolder(itemView:View,):RecyclerView.ViewHolder(itemView){
         val logoImageView:AppCompatImageView=itemView.findViewById(R.id.ivSymbolImage_summary)
         val stockName:TextView=itemView.findViewById(R.id.tvSymbol_summary)
         val stockPrice:TextView=itemView.findViewById(R.id.tvSymbolPrice_summary)
         val stockPercent:TextView=itemView.findViewById(R.id.tvSymbolPercent_summary)
-
-
-
-
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ItemViewHolder {
@@ -46,27 +44,22 @@ class HomeRecyclerAdapter(private val items:MutableList<SymbolSummary>):Recycler
         holder.stockName.text = items[position].symbol
         holder.stockPercent.text = items[position].change_percent.toString()
         holder.stockPrice.text = items[position].current_price.toString()
-        
-        
-
     }
-        fun setDetailsClickListener(listener:HomeRecyclerAdapter.SymbolCLicked){
-            clickListener=listener
-        }
+
+    fun setDetailsClickListener(listener:HomeRecyclerAdapter.SymbolCLicked){
+        clickListener=listener
+    }
 
     interface SymbolCLicked {
         fun onSymbolCLicked(symbol: SymbolSummary){}
-
-
-
     }
+
     fun updateData(newData: List<SymbolSummary>) {
-        // Update the adapter's data with the new list
         items.clear()
         items.addAll(newData)
         notifyDataSetChanged()
-
     }
-
-
 }
+
+
+

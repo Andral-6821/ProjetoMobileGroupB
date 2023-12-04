@@ -13,8 +13,16 @@ import com.example.projetomobiledef.retrofit.SymbolSummary
 import com.example.projetomobiledef.SharedPreferencesHelper
 import com.squareup.picasso.Picasso
 
-class EditStockListRecyclerAdapter(private val dataList: MutableList<SymbolSummary>) : RecyclerView.Adapter<EditStockListRecyclerAdapter.ItemViewHolder>() {
-    // ViewHolder class to hold the views
+class EditStockListRecyclerAdapter(
+    private val dataList: MutableList<SymbolSummary>,
+    private val listener: OnSymbolToggleListener
+) : RecyclerView.Adapter<EditStockListRecyclerAdapter.ItemViewHolder>() {
+
+    interface OnSymbolToggleListener {
+        fun onSymbolToggle(symbol: SymbolSummary, isChecked: Boolean)
+    }
+
+
     class ItemViewHolder(itemView: View,  ) : RecyclerView.ViewHolder(itemView) {
         val nameTextView: Switch = itemView.findViewById(R.id.button)
 
@@ -52,7 +60,7 @@ class EditStockListRecyclerAdapter(private val dataList: MutableList<SymbolSumma
 
         val isSymbolSaved = SharedPreferencesHelper.loadSymbols(holder.itemView.context).contains(dataList[position])
 
-        holder.nameTextView.setOnCheckedChangeListener(null) // Remova temporariamente o listener para evitar chamadas recursivas
+        holder.nameTextView.setOnCheckedChangeListener(null)
 
         holder.nameTextView.isChecked = isSymbolSaved
 
@@ -65,11 +73,12 @@ class EditStockListRecyclerAdapter(private val dataList: MutableList<SymbolSumma
                 } else {
                     // remover o símbolo das preferências compartilhadas enquanto o switch está desativado
                     SharedPreferencesHelper.removeSymbol(dataList[position], holder.itemView.context)
+                    // Notify the listener that the symbol should be removed
+                    listener.onSymbolToggle(dataList[position], false)
                 }
                 notifyItemChanged(position)
             }
         }
-
     }
 
     // Return the size of your dataset

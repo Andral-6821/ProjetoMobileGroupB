@@ -4,6 +4,7 @@ import com.example.projetomobiledef.retrofit.News
 import com.example.projetomobiledef.retrofit.SymbolDetails
 import com.example.projetomobiledef.retrofit.SymbolSummary
 import retrofit2.Call
+import retrofit2.Response
 import retrofit2.http.GET
 import retrofit2.http.Path
 
@@ -18,7 +19,7 @@ interface retrofitInterface {
     @GET("api/news")
     fun getNews(): Call<List<News>>
 
-    @GET("api/symbol/details/{symbol}")
-    fun getSymbolDetails(@Path("symbol") symbol:String): Call<SymbolDetails>
+    @GET("/api/symbol/details/{symbol}")
+    suspend fun getSymbolDetails(@Path("symbol") symbol: String) : Response<SymbolDetails>
 }
 

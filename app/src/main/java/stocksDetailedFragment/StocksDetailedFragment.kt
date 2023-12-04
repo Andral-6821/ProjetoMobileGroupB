@@ -1,7 +1,5 @@
 
 package stocksDetailedFragment
-
-import android.annotation.SuppressLint
 import com.github.mikephil.charting.charts.LineChart
 import com.github.mikephil.charting.data.Entry
 import com.github.mikephil.charting.data.LineData
@@ -15,22 +13,23 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
-import com.bumptech.glide.Glide
 import com.example.projetomobiledef.R
-import com.example.projetomobiledef.SharedPreferencesHelper
 import com.example.projetomobiledef.retrofit.SymbolDetails
 import com.example.projetomobiledef.retrofit.SymbolSummary
-import com.jjoe64.graphview.GraphView
+import com.squareup.picasso.Picasso
 import retrofit.RetrofitConfig
 import retrofit.retrofitInterface
-import retrofit2.Call
-import retrofit2.Callback
 import retrofit2.Response
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
-class StocksDetailedFragment():Fragment() {
-
+class StocksDetailedFragment(passedSymbol : SymbolSummary):Fragment() {
+    val passedSymbol = passedSymbol
+    var symbolReturn : SymbolDetails? = null
     private val details: MutableList<SymbolDetails> = mutableListOf()
-    lateinit var chartGraph: GraphView
+    private lateinit var linechart :LineChart
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -42,16 +41,18 @@ class StocksDetailedFragment():Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        linechart = LineChart(requireContext())
+        runBlocking {
+            loadDetails()
+        }
 
-        //Lê a funcionalidade que foi clicada para ver os detalhes
-        val clickedSummary= arguments?.getString("symbol")?:null
 
         //Selecionar o container
-        val stockcontainer=view.findViewById<LinearLayout>(R.id.detailsContainer)
+        val stockcontainer = view.findViewById<LinearLayout>(R.id.detailsContainer)
 
-        if(stockcontainer!=null){
+        if (stockcontainer != null) {
             //Selecionar a view dos detalhes
-            val stockDetailView= layoutInflater.inflate(R.layout.fragment_stock_details,null)
+            val stockDetailView = layoutInflater.inflate(R.layout.fragment_stock_details, null)
 
             //TextViews para cada um dos atributos de cada stock
             val stockTitle = stockDetailView.findViewById<TextView>(R.id.titleSymbol)
@@ -61,120 +62,23 @@ class StocksDetailedFragment():Fragment() {
             val stockLogo = stockDetailView.findViewById<ImageView>(R.id.logoImageView)
 
             //selecionar um valor padrão
-            stockTitle.text=clickedSummary
-            stockSector.text = "Loading..."
-            stockCeo.text = "Loading..."
-            stockDescription.text = "Loading..."
+            stockTitle.text = symbolReturn?.symbol
+            stockSector.text = symbolReturn?.sector
+            stockCeo.text = symbolReturn?.CEO
+            stockDescription.text = symbolReturn?.description
+            symbolReturn?.chart_data?.let { setupLineChart(linechart, it.October_2022) }
+            symbolReturn?.logo_url.let{
+                Picasso.get().load(it).into(stockLogo)
+            }
 
             //adicionar uma view aos containers
             stockcontainer.addView(stockDetailView)
-
-            //carregar os detalhes
-            loadDetails(clickedSummary,stockSector,stockCeo,stockDescription)
-            loadLogo(clickedSummary,stockLogo)
-            val stockChart=view.findViewById<LineChart>(R.id.lineChart)?:throw IllegalStateException("GraphView not found")
-            loadChartData(clickedSummary,stockChart)
-        }else{
-            // Handle the case where assetContainer is null
-            // Log an error, show a message, or take appropriate action
         }
+
+
     }
+    fun setupLineChart(lineChart: LineChart, data : List<Double>) {
 
-    private fun loadDetails(
-        clickedSummary: String?,
-        stockSector: TextView,
-        stockCeo: TextView,
-        stockDescription: TextView
-    ) {
-
-        if (clickedSummary != null) {
-            val jsonApi = RetrofitConfig.retrofit.create(retrofitInterface::class.java)
-
-            jsonApi.getSymbolDetails(clickedSummary).enqueue(object : Callback<SymbolDetails> {
-                override fun onResponse(call: Call<SymbolDetails>, response: Response<SymbolDetails>) {
-                    if (response.isSuccessful) {
-                        stockSector.text = "Sector: " + response.body()?.sector ?: "N/A"
-                        stockCeo.text = "CEO: " + response.body()?.CEO ?: "N/A"
-                        stockDescription.text =
-                            "Description: " + response.body()?.description ?: "N/A"
-                    } else {
-                        stockSector.text = "Error: ${response.code()}"
-                        stockCeo.text = "Error"
-                        stockDescription.text = "Error"
-                    }
-                }
-
-                override fun onFailure(call: Call<SymbolDetails>, t: Throwable) {
-                    stockSector.text = "Fail: ${t.message}"
-                    stockCeo.text = "Fail"
-                    stockDescription.text = "Fail"
-                }
-            })
-        }
-    }
-
-
-
-    //função para carregar o logo do stock consultado
-    private fun loadLogo(clickedSummary: String?,logoImageView: ImageView){
-        val jsonApi = RetrofitConfig.retrofit.create(retrofitInterface::class.java)
-
-        //através do glide vamos carregar a imagem
-        clickedSummary?.let{
-            jsonApi.getSymbolDetails(it).enqueue(object :Callback<SymbolDetails>{
-                @SuppressLint("SuspiciousIndentation")
-                override fun onResponse(
-                    call: Call<SymbolDetails>,
-                    response: Response<SymbolDetails>
-                ) {
-                    if(response.isSuccessful){
-                        val logoUrl=response.body()?.logo_url
-                                logoUrl?.let{
-                                    Glide.with(requireContext())
-                                        .load(logoUrl)
-                                        .into(logoImageView)
-                                }
-                    }else{
-                        Log.d("StocksDetail","Error getting logo URL: ${response.code()}")
-                    }
-
-                }
-
-                override fun onFailure(call: Call<SymbolDetails>, t: Throwable) {
-                    Log.e("AssetsDetail","Failed to get logo URL:${t.message}")
-                }
-
-            })
-        }
-    }
-                private fun loadChartData(clickedSummary: String?, lineChart: LineChart){
-                    val jsonApi= RetrofitConfig.retrofit.create(retrofitInterface::class.java)
-
-                    clickedSummary?.let{
-                        jsonApi.getSymbolDetails(it).enqueue(object : Callback<SymbolDetails>{
-                            override fun onResponse(
-                                call: Call<SymbolDetails>,
-                                response: Response<SymbolDetails>
-                            ) {
-                                if(response.isSuccessful){
-                                    val chartData= response.body()?.chart_data
-                                    chartData?.let{
-                                        setupLineChart(lineChart,it.October_2022)
-                                    }
-                                }else{
-                                    Log.d("StocksDetail","Error getting chart dara: ${response.code()}")
-                                }
-                            }
-
-                            override fun onFailure(call: Call<SymbolDetails>, t: Throwable) {
-                                Log.e("StocksDetail","Failed to get chart data: ${t.message}")
-                            }
-                        })
-                    }
-                }
-
-
-    private fun setupLineChart(lineChart: LineChart, data: List<Double>) {
         val entries = ArrayList<Entry>()
 
         for (i in data.indices) {
@@ -188,54 +92,29 @@ class StocksDetailedFragment():Fragment() {
         lineChart.invalidate() // Atualiza o gráfico
     }
 
+    private suspend fun loadDetails(){
+        //val dispatcher = CoroutineScope(Dispatchers.IO)
+        //dispatcher.launch {
+            val jsonApi = RetrofitConfig.getInstance().create(retrofitInterface::class.java)
+            val response : Response<SymbolDetails> = jsonApi.getSymbolDetails(passedSymbol.symbol)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    private fun LoadSummary(view:View) {
-
-
-        val savedStocks = SharedPreferencesHelper.loadSymbols(requireContext())
-
-        val jsonNewsApi = RetrofitConfig.retrofit.create(retrofitInterface::class.java)
-        val savedStocksDetailsList = mutableListOf<SymbolDetails>()
-
-        savedStocks.forEach {
-            val call = jsonNewsApi.getSymbolDetails(it.symbol)
-
-            call.enqueue(object : Callback<SymbolDetails> {
-                override fun onResponse(
-                    call: Call<SymbolDetails>,
-                    response: Response<SymbolDetails>
-                ) {
-                    if (response.isSuccessful) {
-                        response.body()?.let { symbolSummary ->
-                            savedStocksDetailsList.add(symbolSummary)
-                        }
-                    }
+            try {
+                if (response.isSuccessful) {
+                    symbolReturn =  response.body()
+                } else {
+                    // Handle unsuccessful response
+                    // You can log the error message or take appropriate action
+                    Log.e("APIError", "Error: ${response.code()}")
                 }
+            } catch (e: Exception) {
+                // Handle exceptions
+                e.printStackTrace()
+                Log.e("APIError", "Exception: ${e.message}")
+            }
 
-                override fun onFailure(call: Call<SymbolDetails>, t: Throwable) {
-                    TODO("Not yet implemented")
-                }
-                //TRatar erros na resposta
-            })
-        }
     }
 }
+
+
+
 

@@ -10,15 +10,17 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.projetomobiledef.R
 import com.example.projetomobiledef.retrofit.SymbolSummary
+import com.example.projetomobiledef.ui.home.HomeFragment
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import retrofit.RetrofitConfig
 import retrofit.retrofitInterface
 
-class EditStockListFragment : Fragment() {
+class EditStockListFragment : Fragment() , EditStockListRecyclerAdapter.OnSymbolToggleListener {
 
-    private val editStockListRecyclerAdapter = EditStockListRecyclerAdapter(mutableListOf())
+    val editStockListRecyclerAdapter = EditStockListRecyclerAdapter(mutableListOf(), this)
+
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -32,8 +34,16 @@ class EditStockListFragment : Fragment() {
         return view
     }
 
+    override fun onSymbolToggle(symbol: SymbolSummary, isChecked: Boolean) {
+        // Handle the symbol toggle here
+        if (!isChecked) {
+            // Remove the symbol from the HomeFragment's list
+            (requireActivity() as? HomeFragment)?.removeSymbolFromHome(symbol)
+        }
+    }
+
     private fun loadList(recyclerView: RecyclerView) {
-        val apiCallsList = RetrofitConfig.retrofit.create(retrofitInterface::class.java)
+        val apiCallsList = RetrofitConfig.getInstance().create(retrofitInterface::class.java)
         val list = mutableListOf<SymbolSummary>()
 
 
@@ -50,9 +60,12 @@ class EditStockListFragment : Fragment() {
                                 ) {
                                     if (response.isSuccessful) {
                                         response.body()?.let { summaryResponse ->
-                                            list.add(summaryResponse)
-                                            editStockListRecyclerAdapter.setData(list)
+                                            if (!list.contains(summaryResponse)) {
+                                                list.add(summaryResponse)
+                                                editStockListRecyclerAdapter.setData(list)
+                                            }
                                         }
+
                                     } else {
                                         // Handle unsuccessful response
                                         println("Unsuccessful response")
@@ -72,6 +85,7 @@ class EditStockListFragment : Fragment() {
             override fun onFailure(call: Call<List<String>>, t: Throwable) {
                 TODO("Not yet implemented")
             }
+
         })
     }
 
@@ -82,30 +96,12 @@ class EditStockListFragment : Fragment() {
 
 
 
+
+/*
     private fun addSymbolsToPage(symbols: MutableList<SymbolSummary>, recyclerView: RecyclerView) {
         val adapter = EditStockListRecyclerAdapter(symbols)
         recyclerView.adapter = adapter
-/*
-        adapter.setOnItemClickListener(object : EditStockListRecyclerAdapter.onItemClickListener {
-            override fun onItemClick(position: Int) {
-                val selectedSymbol = symbols[position]
 
-                val sharedPreferences =
-                    requireContext().getSharedPreferences("sua_pref_name", Context.MODE_PRIVATE)
-                val existingSymbols = SharedPreferencesHelper.loadSymbols(requireContext())
-
-                if (!existingSymbols.contains(selectedSymbol)) {
-                    SharedPreferencesHelper.addSymbol(selectedSymbol, requireContext())
-                    showErrorDialog("Stock adicionado com sucesso!")
-                    //TODO //getString(R.string.)
-                } else {
-                    showErrorDialog("O Stock já está na lista!")
-                    //TODO //getString(R.string.)
-                }
-
-                findNavController().popBackStack(R.id.navigation_home, false)
-            }
-        })*/
     }
 
     private fun showErrorDialog(message: String) {
@@ -116,4 +112,6 @@ class EditStockListFragment : Fragment() {
                 dialog.dismiss()
             }.show()
     }
+    */
+
 }

@@ -45,7 +45,7 @@ class NewsFragment: Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val jsonNewsApi = RetrofitConfig.retrofit.create(retrofitInterface::class.java)
+        val jsonNewsApi = RetrofitConfig.getInstance().create(retrofitInterface::class.java)
         val call = jsonNewsApi.getNews()
 
         call.enqueue(object : Callback<List<News>> {

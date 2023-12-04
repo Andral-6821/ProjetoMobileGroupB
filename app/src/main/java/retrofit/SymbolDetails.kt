@@ -11,5 +11,4 @@ data class SymbolDetails(
     val logo_url: String,
     val sector: String,
     val symbol: String,
-
 )
